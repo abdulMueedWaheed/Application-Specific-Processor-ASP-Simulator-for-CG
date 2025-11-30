@@ -24,41 +24,9 @@ typedef struct {
     int valid;        // 1 = has instruction, 0 = bubble
 } IFIDReg;
 
-typedef enum {
-    OP_ADD,
-    OP_SUB,
-    OP_MUL,
-    OP_DRAWPIX,
-    OP_DRAWSTEP,
-    OP_SETCLR,
-    OP_CLEARFB,
-    OP_LW,
-    OP_SW,
-    OP_BEQ,
-    OP_NOP,
-    OP_INVALID
-} Opcode;
 
-typedef struct {
-    Opcode op;
-    int rd, 
-    rs1, rs2; 
-    int32_t imm; 
-    uint32_t pc; 
-    int valid; /* control flags */
-} DecodedInst;
-
-typedef struct {
-    char name[64];
-    int address;
-} LabelEntry;
 
 // ---------- Function Prototypes ----------
-void free_imem(InstMem *im);
-int build_imem(const char *filename,
-                     InstMem *im,
-                     LabelEntry labels[],
-                     int label_count);
 
 void init_ifid(IFIDReg *r);
 void free_ifid(IFIDReg *r);

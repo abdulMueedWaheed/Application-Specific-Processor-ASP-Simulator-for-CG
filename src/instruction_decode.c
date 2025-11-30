@@ -1,4 +1,4 @@
-#include "../include/isa.h"
+#include "../include/decode.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
