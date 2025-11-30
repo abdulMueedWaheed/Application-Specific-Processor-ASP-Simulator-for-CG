@@ -6,3 +6,6 @@ DRAWSTEP R7, R8, R9
 # comment line
 CLEARFB
 NOP
+LABEL:
+    ADD R2, R3, R4
+    BEQ R2, R3, LABEL

@@ -18,11 +18,11 @@ void free_ifid(IFIDReg *r) {
 }
 
 // Set PC (needed for branches)
-void set_pc(IFState *s, uint32_t pc_value) {
+void set_pc(ProgramCounter *s, uint32_t pc_value) {
     s->pc = pc_value;
 }
 
-void if_stage_fetch(IFState *s, InstMem *im, IFIDReg *ifid)
+void if_stage_fetch(ProgramCounter *s, InstMem *im, IFIDReg *ifid)
 {
     // Clear previous contents
     if (ifid->instr_text) {
