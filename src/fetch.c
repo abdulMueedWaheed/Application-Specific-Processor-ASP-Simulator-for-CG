@@ -1,16 +1,16 @@
 #include <stdlib.h>
 #include <string.h>
-#include "../include/cpu.h"
+#include "../include/decode.h"
 
 // IF/ID initialization
-void init_ifid(IFIDReg *r) {
+void init_ifid(IFIDreg *r) {
     r->instr_text = NULL;
     r->pc = 0;
     r->valid = 0;
 }
 
 // IF/ID cleanup
-void free_ifid(IFIDReg *r) {
+void free_ifid(IFIDreg *r) {
     if (r->instr_text)
         free(r->instr_text);
     r->instr_text = NULL;
@@ -22,7 +22,7 @@ void set_pc(ProgramCounter *s, uint32_t pc_value) {
     s->pc = pc_value;
 }
 
-void if_stage_fetch(ProgramCounter *s, InstMem *im, IFIDReg *ifid)
+void if_stage_fetch(ProgramCounter *s, InstMem *im, IFIDreg *ifid)
 {
     // Clear previous contents
     if (ifid->instr_text) {

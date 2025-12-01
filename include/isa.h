@@ -1,13 +1,11 @@
 #ifndef ISA_H
 #define ISA_H
 
-#include <stdint.h>
-#include <string.h>
 #include "cpu.h"
-#include <stdio.h>
 
 typedef enum {
     OP_ADD,
+    OP_ADDI,
     OP_SUB,
     OP_MUL,
     OP_DRAWPIX,
@@ -22,6 +20,12 @@ typedef enum {
 } Opcode;
 
 typedef struct {
+    char name[64];
+    int address;
+} LabelEntry;
+
+
+typedef struct {
     Opcode op;
     int rd, 
     rs1, rs2; 
@@ -29,11 +33,5 @@ typedef struct {
     uint32_t pc; 
     int valid; /* control flags */
 } DecodedInst;
-
-typedef struct {
-    char name[64];
-    int address;
-} LabelEntry;
-
 
 #endif

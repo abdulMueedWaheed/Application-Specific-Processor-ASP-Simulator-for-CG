@@ -2,6 +2,7 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 int is_label(const char *line) {
     if (!line) return 0;
@@ -76,7 +77,7 @@ void detectLabels(const char* filename, LabelEntry label_table[], int *label_ind
 
 
 
-void instruction_parser(IFIDReg *ifid, DecodedInst *out){
+void instruction_parser(IFIDreg *ifid, DecodedInst *out){
     memset(out, 0, sizeof(DecodedInst));
     out->pc = ifid->pc;
     out->valid = 0;
@@ -114,6 +115,21 @@ void instruction_parser(IFIDReg *ifid, DecodedInst *out){
             out->rs2 = parse_register(rs2);
             out->op = OP_ADD;
             out->imm = 0;
+            out->valid = (out->rd >= 0 && out->rs1 >= 0 && out->rs2 >= 0);
+            return;
+        }
+
+        else if (strcmp(token, "ADDI") == 0) {
+            /* ADD rd, rs1, rs2 */
+            char *rd = strtok_r(NULL, delimiters, &saveptr);
+            char *rs1 = strtok_r(NULL, delimiters, &saveptr);
+            char* imm = strtok_r(NULL, delimiters, &saveptr);
+
+            out->rd  = parse_register(rd);
+            out->rs1 = parse_register(rs1);
+            out->rs2 = -1;
+            out->op = OP_ADD;
+            out->imm = parse_immediate(imm);
             out->valid = (out->rd >= 0 && out->rs1 >= 0 && out->rs2 >= 0);
             return;
         }

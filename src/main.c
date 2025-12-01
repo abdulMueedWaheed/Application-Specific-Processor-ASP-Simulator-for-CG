@@ -1,6 +1,7 @@
 #include <stdio.h>
-#include "../include/cpu.h"
-#include "../include/isa.h"
+#include <string.h>
+#include "../include/decode.h"
+#include "../include/fetch.h"
 
 int main(int argc, char **argv)
 {
@@ -23,7 +24,7 @@ int main(int argc, char **argv)
 
     // === Initialize CPU state ===
     ProgramCounter pc = { .pc = 0 };
-    IFIDReg ifid;
+    IFIDreg ifid;
     // IDEXReg idex;
     // EXMEMReg exmem;
     // MEMWBReg memwb;

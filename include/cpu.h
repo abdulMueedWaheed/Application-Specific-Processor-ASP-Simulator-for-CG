@@ -12,28 +12,12 @@ typedef struct {
     size_t size;      // number of instructions
 } InstMem;
 
-// ---------- IF State ----------
 typedef struct {
     uint32_t pc;      // instruction index
 } ProgramCounter;
 
 // ---------- IF/ID Pipeline Register ----------
-typedef struct {
-    char *instr_text; // strdup'd text of the instruction
-    uint32_t pc;      // original PC
-    int valid;        // 1 = has instruction, 0 = bubble
-} IFIDReg;
-
-
-
-// ---------- Function Prototypes ----------
-
-void init_ifid(IFIDReg *r);
-void free_ifid(IFIDReg *r);
 
 void set_pc(ProgramCounter *s, uint32_t pc_value);
-
-// IF Stage function
-void if_stage_fetch(ProgramCounter *s, InstMem *im, IFIDReg *ifid);
 
 #endif
