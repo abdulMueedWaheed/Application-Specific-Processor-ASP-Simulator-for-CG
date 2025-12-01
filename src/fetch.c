@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
-#include "../include/decode.h"
+#include "../include/parse_instruction.h"
 
 // IF/ID initialization
 void init_ifid(IFIDreg *r) {
@@ -17,12 +17,7 @@ void free_ifid(IFIDreg *r) {
     r->valid = 0;
 }
 
-// Set PC (needed for branches)
-void set_pc(ProgramCounter *s, uint32_t pc_value) {
-    s->pc = pc_value;
-}
-
-void if_stage_fetch(ProgramCounter *s, InstMem *im, IFIDreg *ifid)
+void if_stage(ProgramCounter *s, InstMem *im, IFIDreg *ifid)
 {
     // Clear previous contents
     if (ifid->instr_text) {

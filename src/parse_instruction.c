@@ -1,4 +1,4 @@
-#include "../include/decode.h"
+#include "../include/parse_instruction.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>

@@ -14,8 +14,7 @@ void execute_instruction(DecodedInst* input, ProgramCounter pc, LabelEntry label
     case OP_ADD:
         add(input->rs1,
             input->rs2,
-            input->rd,
-            input->imm);
+            input->rd);
     break;
     
     case OP_ADDI:
@@ -35,7 +34,11 @@ void execute_instruction(DecodedInst* input, ProgramCounter pc, LabelEntry label
     }
 }
 
-void add(int rs1_value, int rs2_value, int rd_value, int imm) {
+void add(int rs1_value, int rs2_value, int rd_value) {
     int a = rs1_value, b = rs2_value, c = rd_value;
     registers[c] = registers[a] + registers[b];
+}
+
+void addi(){
+
 }

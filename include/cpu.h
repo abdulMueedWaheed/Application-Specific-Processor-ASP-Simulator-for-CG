@@ -5,6 +5,7 @@
 #include <stddef.h>
 
 #define MAX_IMEM 65536 // For 32 bit instructions: 65536 * 32 =  2MB RAM
+extern int32_t regs[32];
 
 // ---------- Instruction Memory ----------
 typedef struct {
@@ -15,9 +16,5 @@ typedef struct {
 typedef struct {
     uint32_t pc;      // instruction index
 } ProgramCounter;
-
-// ---------- IF/ID Pipeline Register ----------
-
-void set_pc(ProgramCounter *s, uint32_t pc_value);
 
 #endif

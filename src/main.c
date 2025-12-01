@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <string.h>
-#include "../include/decode.h"
+#include "../include/parse_instruction.h"
 #include "../include/fetch.h"
 
 int main(int argc, char **argv)
@@ -24,6 +24,9 @@ int main(int argc, char **argv)
 
     // === Initialize CPU state ===
     ProgramCounter pc = { .pc = 0 };
+    int32_t regs[32];
+    regs[0] = 0;
+
     IFIDreg ifid;
     // IDEXReg idex;
     // EXMEMReg exmem;
@@ -50,7 +53,7 @@ int main(int argc, char **argv)
         // ex_stage(&idex, &exmem);
 
         // IF stage (fetch)
-        if_stage_fetch(&pc, &im, &ifid);
+        if_stage(&pc, &im, &ifid);
 
 
         if (ifid.valid) { 
