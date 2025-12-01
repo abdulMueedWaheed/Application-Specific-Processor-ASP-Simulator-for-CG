@@ -3,7 +3,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 
-#include "../include/fetch.h"
+#include "../include/isa.h"
 
 // Helper: trim whitespace in-place
 static void trim(char *s) {

@@ -1,7 +1,6 @@
-#include "../include/execute.h"
+#include "../include/isa.h"
 #include <stdio.h>
 
-int32_t registers[32];
 
 void execute_instruction(DecodedInst* input, ProgramCounter pc, LabelEntry label_table){
     if (input->valid) {
@@ -12,9 +11,6 @@ void execute_instruction(DecodedInst* input, ProgramCounter pc, LabelEntry label
     switch (input->op) {
     
     case OP_ADD:
-        add(input->rs1,
-            input->rs2,
-            input->rd);
     break;
     
     case OP_ADDI:
@@ -32,13 +28,4 @@ void execute_instruction(DecodedInst* input, ProgramCounter pc, LabelEntry label
     case OP_INVALID:
     break;
     }
-}
-
-void add(int rs1_value, int rs2_value, int rd_value) {
-    int a = rs1_value, b = rs2_value, c = rd_value;
-    registers[c] = registers[a] + registers[b];
-}
-
-void addi(){
-
 }

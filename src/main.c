@@ -1,7 +1,10 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include "../include/isa.h"
 #include "../include/parse_instruction.h"
-#include "../include/fetch.h"
+
+int32_t regs[32];
 
 int main(int argc, char **argv)
 {
@@ -28,7 +31,7 @@ int main(int argc, char **argv)
     regs[0] = 0;
 
     IFIDreg ifid;
-    // IDEXReg idex;
+    IDEXreg idex;
     // EXMEMReg exmem;
     // MEMWBReg memwb;
 
@@ -68,7 +71,9 @@ int main(int argc, char **argv)
         // ID stage (decode)
         DecodedInst decoded;
         memset(&decoded, 0, sizeof(decoded));
+        
         instruction_parser(&ifid, &decoded);
+        id_stage(&decoded, &idex);
 
         if (decoded.valid) {
             printf("Decoded: pc=%u op=%d imm=%d rd=%d rs1=%d rs2=%d\n",

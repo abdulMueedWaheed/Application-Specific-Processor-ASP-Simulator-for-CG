@@ -4,16 +4,8 @@
 #include "cpu.h"
 #include "isa.h"
 
-typedef struct {
-    char *instr_text; // strdup'd text of the instruction
-    uint32_t pc;      // original PC
-    int valid;        // 1 = has instruction, 0 = bubble
-} IFIDreg;
 
 // ---------- Function Prototypes ----------
-
-void init_ifid(IFIDreg *r);
-void free_ifid(IFIDreg *r);
 
 int parse_register(const char *tok);
 void instruction_parser(IFIDreg *ifid, DecodedInst *out);

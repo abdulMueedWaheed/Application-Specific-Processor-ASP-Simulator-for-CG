@@ -34,5 +34,44 @@ typedef struct {
     int valid; /* control flags */
 } DecodedInst;
 
+typedef struct {
+    char *instr_text; // strdup'd text of the instruction
+    uint32_t pc;      // original PC
+    int valid;        // 1 = has instruction, 0 = bubble
+} IFIDreg;
+
+typedef struct {
+    int valid;
+
+    Opcode op;
+
+    int32_t rs1_val;
+    int32_t rs2_val;
+
+    int rd;            // destination register number
+    int32_t imm;       // immediate value
+
+    uint32_t pc;       // original PC (for branches)
+
+} IDEXreg;
+
+void free_imem(InstMem *im);
+int build_imem(const char *filename,
+    InstMem *im,
+    LabelEntry labels[],
+    int label_count);
+
+
+void if_stage(ProgramCounter *pc, InstMem *im, IFIDreg *ifid);
+    
+
+void id_stage(DecodedInst *dec, IDEXreg *idex);
+void init_ifid(IFIDreg *r);
+void free_ifid(IFIDreg *r);
+
+void execute_instruction(DecodedInst* input, ProgramCounter pc, LabelEntry label_table);
+void add(int rs1_value, int rs2_value, int rd_value);
+
+
 
 #endif
