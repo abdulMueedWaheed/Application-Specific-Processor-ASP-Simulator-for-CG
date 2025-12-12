@@ -128,7 +128,22 @@ void instruction_parser(IFIDreg *ifid, DecodedInst *out){
             out->rd  = parse_register(rd);
             out->rs1 = parse_register(rs1);
             out->rs2 = -1;
-            out->op = OP_ADD;
+            out->op = OP_ADDI;
+            out->imm = parse_immediate(imm);
+            out->valid = (out->rd >= 0 && out->rs1 >= 0 && out->rs2 >= 0);
+            return;
+        }
+
+        else if (strcmp(token, "SUBI") == 0) {
+            /* ADD rd, rs1, rs2 */
+            char *rd = strtok_r(NULL, delimiters, &saveptr);
+            char *rs1 = strtok_r(NULL, delimiters, &saveptr);
+            char* imm = strtok_r(NULL, delimiters, &saveptr);
+
+            out->rd  = parse_register(rd);
+            out->rs1 = parse_register(rs1);
+            out->rs2 = -1;
+            out->op = OP_SUBI;
             out->imm = parse_immediate(imm);
             out->valid = (out->rd >= 0 && out->rs1 >= 0 && out->rs2 >= 0);
             return;

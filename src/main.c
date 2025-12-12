@@ -23,41 +23,43 @@ int main(int argc, char **argv)
     }
     printf("Loaded %zu instructions.\n", im.size);
 
-    
-
     // === Initialize CPU state ===
     ProgramCounter pc = { .pc = 0 };
-    int32_t regs[32];
-    regs[0] = 0;
+    
+    // Initialize all registers to 0
+    for (int i = 0; i < 32; i++) {
+        regs[i] = 0;
+    }
 
+    // Initialize pipeline registers
     IFIDreg ifid;
     IDEXreg idex;
-    // EXMEMReg exmem;
-    // MEMWBReg memwb;
+    EXMEMreg exmem;
+    MEMWBreg memwb;
 
     init_ifid(&ifid);
-    // init_idex(&idex);
-    // init_exmem(&exmem);
-    // init_memwb(&memwb);
+    init_idex(&idex);
+    init_exmem(&exmem);
+    init_memwb(&memwb);
 
     // === Pipeline simulation ===
-    int idle = 0; int cycle = 0;
+    int idle = 0;
+    int cycle = 0;
 
     while (idle < 5) {
         printf("\n=== Cycle %d ===\n", cycle);
 
-        // // WB stage
-        // wb_stage(&memwb);
+        // WB stage (writeback)
+        wb_stage(&memwb);
 
-        // // MEM stage
-        // mem_stage(&exmem, &memwb);
+        // MEM stage (memory access)
+        mem_stage(&exmem, &memwb);
 
-        // // EX stage
-        // ex_stage(&idex, &exmem);
+        // EX stage (execute)
+        ex_stage(&idex, &exmem);
 
         // IF stage (fetch)
         if_stage(&pc, &im, &ifid);
-
 
         if (ifid.valid) { 
             printf("Fetched: [PC=%u] %s\n", ifid.pc, ifid.instr_text); 
@@ -71,7 +73,6 @@ int main(int argc, char **argv)
         // ID stage (decode)
         DecodedInst decoded;
         memset(&decoded, 0, sizeof(decoded));
-        
         instruction_parser(&ifid, &decoded);
         id_stage(&decoded, &idex);
 
@@ -79,13 +80,18 @@ int main(int argc, char **argv)
             printf("Decoded: pc=%u op=%d imm=%d rd=%d rs1=%d rs2=%d\n",
                    decoded.pc, decoded.op, decoded.imm,
                    decoded.rd, decoded.rs1, decoded.rs2);
-            // pass decoded into ID/EX register in a complete pipeline
         } else {
             printf("Decode: invalid or bubble\n");
         }
-        //id_stage(&decoded, &idex);
 
         cycle++;
+    }
+
+    printf("\n=== Final Register State ===\n");
+    for (int i = 0; i < 32; i++) {
+        if (regs[i] != 0) {
+            printf("x%d = 0x%x (%d)\n", i, regs[i], regs[i]);
+        }
     }
 
     free_ifid(&ifid);
