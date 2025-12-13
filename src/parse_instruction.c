@@ -130,7 +130,7 @@ void instruction_parser(IFIDreg *ifid, DecodedInst *out){
             out->rs2 = -1;
             out->op = OP_ADDI;
             out->imm = parse_immediate(imm);
-            out->valid = (out->rd >= 0 && out->rs1 >= 0 && out->rs2 >= 0);
+            out->valid = (out->rd >= 0 && out->rs1 >= 0);
             return;
         }
 
@@ -145,7 +145,7 @@ void instruction_parser(IFIDreg *ifid, DecodedInst *out){
             out->rs2 = -1;
             out->op = OP_SUBI;
             out->imm = parse_immediate(imm);
-            out->valid = (out->rd >= 0 && out->rs1 >= 0 && out->rs2 >= 0);
+            out->valid = (out->rd >= 0 && out->rs1 >= 0);
             return;
         }
 

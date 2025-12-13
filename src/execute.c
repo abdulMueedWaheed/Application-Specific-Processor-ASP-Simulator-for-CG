@@ -1,6 +1,10 @@
 #include "../include/isa.h"
+#include "../include/graphics.h"
 #include <stdio.h>
 #include <string.h>
+
+// External global framebuffer
+Framebuffer *global_fb = NULL;
 
 // Simple data memory (simulated)
 #define DATA_MEM_SIZE 4096
@@ -69,14 +73,53 @@ void ex_stage(IDEXreg *idex, EXMEMreg *exmem) {
             exmem->alu_result = 0;
             break;
 
-        // Graphics instructions: these are more complex and would need
-        // framebuffer state. For now, treat them as no-ops
-        case OP_DRAWPIX:
-        case OP_DRAWSTEP:
-        case OP_SETCLR:
-        case OP_CLEARFB:
+        // ========== GRAPHICS OPERATIONS ==========
+        case OP_DRAWPIX: {
+            // DRAWPIX rs1, rs2: Draw pixel at (rs1, rs2) with current color
+            if (global_fb) {
+                int x = idex->rs1_val & 0xFFFF;  // Lower 16 bits
+                int y = idex->rs2_val & 0xFFFF;  // Lower 16 bits
+                fb_draw_pixel(global_fb, x, y);
+                printf("EX: DRAWPIX at (%d, %d) color=0x%x\n", x, y, global_fb->current_color);
+            }
             exmem->alu_result = 0;
             break;
+        }
+
+        case OP_DRAWSTEP: {
+            // DRAWSTEP rs1, rs2, imm: Draw line from current position by (rs1, rs2)
+            if (global_fb) {
+                int dx = idex->rs1_val;
+                int dy = idex->rs2_val;
+                fb_draw_step(global_fb, dx, dy);
+                printf("EX: DRAWSTEP offset (%d, %d)\n", dx, dy);
+            }
+            exmem->alu_result = 0;
+            break;
+        }
+
+        case OP_SETCLR: {
+            // SETCLR imm: Set current color to immediate value
+            if (global_fb) {
+                uint32_t color = idex->imm & 0xFFFFFF;  // 24-bit RGB
+                // Convert RGB to ARGB (add full alpha)
+                color = (0xFF << 24) | color;
+                fb_set_color(global_fb, color);
+                printf("EX: SETCLR color=0x%x\n", color);
+            }
+            exmem->alu_result = 0;
+            break;
+        }
+
+        case OP_CLEARFB: {
+            // CLEARFB: Clear framebuffer (set all pixels to black)
+            if (global_fb) {
+                fb_clear(global_fb);
+                printf("EX: CLEARFB\n");
+            }
+            exmem->alu_result = 0;
+            break;
+        }
 
         case OP_INVALID:
         default:
@@ -125,6 +168,14 @@ void mem_stage(EXMEMreg *exmem, MEMWBreg *memwb) {
             }
             break;
         }
+
+        // Graphics operations don't need memory stage
+        case OP_DRAWPIX:
+        case OP_DRAWSTEP:
+        case OP_SETCLR:
+        case OP_CLEARFB:
+            memwb->rd = -1;  // No register writeback
+            break;
 
         default:
             // All other operations: ALU result is passed through
