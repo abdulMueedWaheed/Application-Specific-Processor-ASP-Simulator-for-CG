@@ -1,0 +1,47 @@
+# Graphics Demo Program - Draw colored pixels
+# With proper pipeline delays
+
+CLEARFB
+SETCLR 0xFF0000
+
+# Pixel 1: (50, 50) - Red
+ADDI x1, x0, 50
+ADDI x2, x0, 50
+NOP
+NOP
+DRAWPIX x1, x2
+
+# Pixel 2: (60, 60) - Green
+SETCLR 0x00FF00
+ADDI x3, x0, 60
+ADDI x4, x0, 60
+NOP
+NOP
+DRAWPIX x3, x4
+
+# Pixel 3: (70, 70) - Blue
+SETCLR 0x0000FF
+ADDI x5, x0, 70
+ADDI x6, x0, 70
+NOP
+NOP
+DRAWPIX x5, x6
+
+# Pixel 4: (80, 80) - Yellow
+SETCLR 0xFFFF00
+ADDI x7, x0, 80
+ADDI x8, x0, 80
+NOP
+NOP
+DRAWPIX x7, x8
+
+# Pixel 5: (90, 90) - Cyan
+SETCLR 0x00FFFF
+ADDI x9, x0, 90
+ADDI x10, x0, 90
+NOP
+NOP
+DRAWPIX x9, x10
+
+NOP
+NOP
