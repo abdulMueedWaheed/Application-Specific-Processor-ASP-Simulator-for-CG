@@ -1,5 +1,6 @@
 #include "../include/isa.h"
 #include "../include/graphics.h"
+#include "../include/executor.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -24,108 +25,21 @@ void ex_stage(IDEXreg *idex, EXMEMreg *exmem) {
     exmem->rd = idex->rd;
     exmem->pc = idex->pc;
     exmem->rs2_val = idex->rs2_val;  // needed for SW
-    exmem->alu_result = 0;
 
-    // Execute instruction based on opcode
-    switch (idex->op) {
-        case OP_ADD:
-            exmem->alu_result = idex->rs1_val + idex->rs2_val;
-            break;
+    // Use unified executor
+    ExecResult exec_result = execute_inst(
+        idex->op,
+        idex->rd, -1, -1,  // Registers already read in ID stage
+        idex->imm,
+        idex->pc,
+        idex->rs1_val, idex->rs2_val,
+        regs,  // Global register file
+        global_fb,
+        data_memory,
+        DATA_MEM_SIZE
+    );
 
-        case OP_ADDI:
-            exmem->alu_result = idex->rs1_val + idex->imm;
-            break;
-
-        case OP_SUB:
-            exmem->alu_result = idex->rs1_val - idex->rs2_val;
-            break;
-
-        case OP_SUBI:
-            exmem->alu_result = idex->rs1_val - idex->imm;
-            break;
-
-        case OP_MUL:
-            exmem->alu_result = idex->rs1_val * idex->rs2_val;
-            break;
-
-        case OP_LW:
-            // Address calculation (imm is offset, rs1_val is base address)
-            exmem->alu_result = idex->rs1_val + idex->imm;
-            break;
-
-        case OP_SW:
-            // Address calculation (imm is offset, rs1_val is base address)
-            exmem->alu_result = idex->rs1_val + idex->imm;
-            break;
-
-        case OP_BEQ:
-            // Branch: compare rs1 and rs2, target is rs1_val + imm (PC-relative offset)
-            if (idex->rs1_val == idex->rs2_val) {
-                // Branch taken: target = PC + imm
-                exmem->alu_result = idex->pc + idex->imm;
-            } else {
-                // Branch not taken
-                exmem->alu_result = idex->pc + 1;  // Next instruction
-            }
-            break;
-
-        case OP_NOP:
-            exmem->alu_result = 0;
-            break;
-
-        // ========== GRAPHICS OPERATIONS ==========
-        case OP_DRAWPIX: {
-            // DRAWPIX rs1, rs2: Draw pixel at (rs1, rs2) with current color
-            if (global_fb) {
-                int x = idex->rs1_val & 0xFFFF;  // Lower 16 bits
-                int y = idex->rs2_val & 0xFFFF;  // Lower 16 bits
-                fb_draw_pixel(global_fb, x, y);
-                printf("EX: DRAWPIX at (%d, %d) color=0x%x\n", x, y, global_fb->current_color);
-            }
-            exmem->alu_result = 0;
-            break;
-        }
-
-        case OP_DRAWSTEP: {
-            // DRAWSTEP rs1, rs2, imm: Draw line from current position by (rs1, rs2)
-            if (global_fb) {
-                int dx = idex->rs1_val;
-                int dy = idex->rs2_val;
-                fb_draw_step(global_fb, dx, dy);
-                printf("EX: DRAWSTEP offset (%d, %d)\n", dx, dy);
-            }
-            exmem->alu_result = 0;
-            break;
-        }
-
-        case OP_SETCLR: {
-            // SETCLR imm: Set current color to immediate value
-            if (global_fb) {
-                uint32_t color = idex->imm & 0xFFFFFF;  // 24-bit RGB
-                // Convert RGB to ARGB (add full alpha)
-                color = (0xFF << 24) | color;
-                fb_set_color(global_fb, color);
-                printf("EX: SETCLR color=0x%x\n", color);
-            }
-            exmem->alu_result = 0;
-            break;
-        }
-
-        case OP_CLEARFB: {
-            // CLEARFB: Clear framebuffer (set all pixels to black)
-            if (global_fb) {
-                fb_clear(global_fb);
-                printf("EX: CLEARFB\n");
-            }
-            exmem->alu_result = 0;
-            break;
-        }
-
-        case OP_INVALID:
-        default:
-            exmem->valid = 0;  // Bubble on invalid instruction
-            break;
-    }
+    exmem->alu_result = exec_result.alu_result;
 }
 
 // ========== MEMORY STAGE ==========
