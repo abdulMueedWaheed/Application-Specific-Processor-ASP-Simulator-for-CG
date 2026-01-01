@@ -1,6 +1,6 @@
-#include "../include/isa.h"
-#include "../include/graphics.h"
 #include "../include/executor.h"
+#include "../include/graphics.h"
+#include "../include/isa.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -12,118 +12,136 @@ Framebuffer *global_fb = NULL;
 static int32_t data_memory[DATA_MEM_SIZE];
 
 // ========== EXECUTE STAGE ==========
-void ex_stage(IDEXreg *idex, EXMEMreg *exmem) {
-    // Initialize output as bubble
-    exmem->valid = 0;
-    
-    if (!idex->valid) {
-        return;  // Pass through bubble
-    }
+void ex_stage(IDEXreg *idex, EXIOreg *exio) {
+  // Initialize output as bubble
+  exio->valid = 0;
 
-    exmem->valid = 1;
-    exmem->op = idex->op;
-    exmem->rd = idex->rd;
-    exmem->pc = idex->pc;
-    exmem->rs2_val = idex->rs2_val;  // needed for SW
+  if (!idex->valid) {
+    return; // Pass through bubble
+  }
 
-    // Use unified executor
-    ExecResult exec_result = execute_inst(
-        idex->op,
-        idex->rd, -1, -1,  // Registers already read in ID stage
-        idex->imm,
-        idex->pc,
-        idex->rs1_val, idex->rs2_val,
-        regs,  // Global register file
-        global_fb,
-        data_memory,
-        DATA_MEM_SIZE
-    );
+  exio->valid = 1;
+  exio->op = idex->op;
+  exio->rd = idex->rd;
+  exio->pc = idex->pc;
+  exio->rs1_val = idex->rs1_val;
+  exio->rs2_val = idex->rs2_val;
+  exio->imm = idex->imm;
 
-    exmem->alu_result = exec_result.alu_result;
+  // Use unified executor with NULL framebuffer
+  // Graphics ops will be effectively NOPs here but valid ops
+  ExecResult exec_result = execute_inst(
+      idex->op, idex->rd, -1, -1, // Registers already read in ID stage
+      idex->imm, idex->pc, idex->rs1_val, idex->rs2_val,
+      regs, // Global register file
+      NULL, // NO FRAMEBUFFER IN EX STAGE
+      data_memory, DATA_MEM_SIZE);
+
+  exio->alu_result = exec_result.alu_result;
+}
+
+// ========== I/O STAGE ==========
+void io_stage(EXIOreg *exio, IOMEMreg *iomem) {
+  // Initialize output as bubble
+  iomem->valid = 0;
+
+  if (!exio->valid) {
+    return;
+  }
+
+  iomem->valid = 1;
+  iomem->op = exio->op;
+  iomem->rd = exio->rd;
+  iomem->pc = exio->pc;
+  iomem->rs2_val = exio->rs2_val;
+  iomem->alu_result = exio->alu_result;
+
+  // Execute only graphics instructions
+  if (exio->op == OP_DRAWPIX || exio->op == OP_DRAWSTEP ||
+      exio->op == OP_SETCLR || exio->op == OP_CLEARFB) {
+
+    execute_inst(exio->op, exio->rd, -1, -1, exio->imm, exio->pc, exio->rs1_val,
+                 exio->rs2_val, regs,
+                 global_fb,   // ACCESS FRAMEBUFFER HERE
+                 data_memory, // Should not touch memory but passed anyway
+                 DATA_MEM_SIZE);
+  }
 }
 
 // ========== MEMORY STAGE ==========
-void mem_stage(EXMEMreg *exmem, MEMWBreg *memwb) {
-    // Initialize output as bubble
-    memwb->valid = 0;
-    
-    if (!exmem->valid) {
-        return;  // Pass through bubble
+void mem_stage(IOMEMreg *iomem, MEMWBreg *memwb) {
+  // Initialize output as bubble
+  memwb->valid = 0;
+
+  if (!iomem->valid) {
+    return; // Pass through bubble
+  }
+
+  memwb->valid = 1;
+  memwb->rd = iomem->rd;
+  memwb->is_memory = 0; // Default: ALU result
+  memwb->write_data = iomem->alu_result;
+
+  // Handle memory operations
+  switch (iomem->op) {
+  case OP_LW: {
+    // Load from memory
+    uint32_t addr = iomem->alu_result;
+    if (addr < DATA_MEM_SIZE) {
+      memwb->write_data = data_memory[addr];
+      memwb->is_memory = 1;
+    } else {
+      printf("Memory access violation: LW at address 0x%x\n", addr);
     }
+    break;
+  }
 
-    memwb->valid = 1;
-    memwb->rd = exmem->rd;
-    memwb->is_memory = 0;  // Default: ALU result
-    memwb->write_data = exmem->alu_result;
-
-    // Handle memory operations
-    switch (exmem->op) {
-        case OP_LW: {
-            // Load from memory
-            uint32_t addr = exmem->alu_result;
-            if (addr < DATA_MEM_SIZE) {
-                memwb->write_data = data_memory[addr];
-                memwb->is_memory = 1;
-            } else {
-                printf("Memory access violation: LW at address 0x%x\n", addr);
-            }
-            break;
-        }
-
-        case OP_SW: {
-            // Store to memory
-            uint32_t addr = exmem->alu_result;
-            if (addr < DATA_MEM_SIZE) {
-                data_memory[addr] = exmem->rs2_val;
-                memwb->valid = 1;
-                memwb->rd = -1;  // No writeback register for store
-            } else {
-                printf("Memory access violation: SW at address 0x%x\n", addr);
-            }
-            break;
-        }
-
-        // Graphics operations don't need memory stage
-        case OP_DRAWPIX:
-        case OP_DRAWSTEP:
-        case OP_SETCLR:
-        case OP_CLEARFB:
-            memwb->rd = -1;  // No register writeback
-            break;
-
-        default:
-            // All other operations: ALU result is passed through
-            memwb->write_data = exmem->alu_result;
-            break;
+  case OP_SW: {
+    // Store to memory
+    uint32_t addr = iomem->alu_result;
+    if (addr < DATA_MEM_SIZE) {
+      data_memory[addr] = iomem->rs2_val;
+      memwb->valid = 1;
+      memwb->rd = -1; // No writeback register for store
+    } else {
+      printf("Memory access violation: SW at address 0x%x\n", addr);
     }
+    break;
+  }
+
+  // Graphics operations don't need memory stage
+  case OP_DRAWPIX:
+  case OP_DRAWSTEP:
+  case OP_SETCLR:
+  case OP_CLEARFB:
+    memwb->rd = -1; // No register writeback
+    break;
+
+  default:
+    // All other operations: ALU result is passed through
+    memwb->write_data = iomem->alu_result;
+    break;
+  }
 }
 
 // ========== WRITEBACK STAGE ==========
 void wb_stage(MEMWBreg *memwb) {
-    if (!memwb->valid) {
-        return;  // Bubble: nothing to write back
-    }
+  if (!memwb->valid) {
+    return; // Bubble: nothing to write back
+  }
 
-    // Write back to register file
-    if (memwb->rd >= 0 && memwb->rd < 32) {
-        regs[memwb->rd] = memwb->write_data;
-        printf("WB: Wrote 0x%x to register x%d\n", memwb->write_data, memwb->rd);
-    }
+  // Write back to register file
+  if (memwb->rd >= 0 && memwb->rd < 32) {
+    regs[memwb->rd] = memwb->write_data;
+    printf("WB: Wrote 0x%x to register x%d\n", memwb->write_data, memwb->rd);
+  }
 }
 
 // ========== LEGACY ALU OPERATIONS (kept for reference) ==========
-int add(int a, int b) {
-    return regs[a] + regs[b];
-}
+int add(int a, int b) { return regs[a] + regs[b]; }
 
-int addi(int a, int b) {
-    return regs[a] + b;
-}
+int addi(int a, int b) { return regs[a] + b; }
 
-int sub(int a, int b) {
-    return regs[a] - regs[b];
-}
+int sub(int a, int b) { return regs[a] - regs[b]; }
 
-int mul(int a, int b) {
-    return regs[a] * regs[b];
-}
+int mul(int a, int b) { return regs[a] * regs[b]; }

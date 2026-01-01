@@ -7,8 +7,6 @@ SETCLR 0xFF0000
 # Pixel 1: (50, 50) - Red
 ADDI x1, x0, 50
 ADDI x2, x0, 50
-NOP
-NOP
 DRAWPIX x1, x2
 
 # Pixel 2: (60, 60) - Green
