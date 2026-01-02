@@ -101,7 +101,8 @@ int build_imem(const char *filename, InstMem *im, LabelEntry labels[],
     for (char *p = tok; *p; ++p)
       *p = toupper(*p);
 
-    if (strcmp(tok, "BEQ") == 0) {
+    // normal processing
+    if (strcmp(tok, "BEQ") == 0 || strcmp(tok, "BLT") == 0) {
       char *rs1 = strtok(NULL, " ,\t");
       char *rs2 = strtok(NULL, " ,\t");
       char *imm = strtok(NULL, " ,\t");
@@ -132,7 +133,7 @@ int build_imem(const char *filename, InstMem *im, LabelEntry labels[],
 
       // Build new instruction string
       char final[256];
-      snprintf(final, sizeof(final), "BEQ %s, %s, %d", rs1, rs2, offset);
+      snprintf(final, sizeof(final), "%s %s, %s, %d", tok, rs1, rs2, offset);
 
       im->lines[im->size++] = strdup(final);
       pc++;

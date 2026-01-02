@@ -1,0 +1,93 @@
+# Capabilities Demo: Line, Cube, Voronoi
+# ----------------------------------------
+CLEARFB
+SETCLR 0xFFFFFF  # White
+
+# === 1. LINE DRAWING ===
+# Draw diagonal line from (0,0) to (50,50)
+ADDI x1, x0, 0   # x = 0
+ADDI x2, x0, 50  # limit
+LOOP_LINE:
+    DRAWPIX x1, x1
+    ADDI x1, x1, 1
+    BLT  x1, x2, LOOP_LINE
+    
+# === 2. CUBE DRAWING (Perspective) ===
+SETCLR 0x00FF00  # Green
+# Simple proj: x' = x/z + offset. y' = y/z + offset.
+# Draw one edge: (100, 100, 2) to (200, 100, 2)
+# Z=2. 
+# P1: x=100/2=50. y=100/2=50. (+offset 50) -> (100,100)
+# P2: x=200/2=100. y=100/2=50. (+offset 50) -> (150,100)
+
+ADDI x10, x0, 100 # Start X
+ADDI x11, x0, 200 # End X
+ADDI x12, x0, 50  # Offset
+ADDI x13, x0, 2   # Z
+
+# Start Point
+DIV  x20, x10, x13 # 100/2 = 50
+ADD  x20, x20, x12 # 100
+DIV  x21, x10, x13 # y=100/2 = 50 (reuse x10 for y)
+ADD  x21, x21, x12 # 100
+
+# End Point
+DIV  x22, x11, x13 # 200/2 = 100
+ADD  x22, x22, x12 # 150
+# y is same
+
+# Draw Line from x20 to x22 at y=x21
+ADDI x30, x20, 0
+LOOP_CUBE:
+    DRAWPIX x30, x21
+    ADDI x30, x30, 1
+    BLT  x30, x22, LOOP_CUBE
+
+# === 3. VORONOI TESSELLATION ===
+# Seeds: S1(10,10) Red, S2(20,20) Blue.
+# Grid 0..32 x 0..32
+SETCLR 0xFF0000 # Red Prep
+ADDI x1, x0, 10 # S1x
+ADDI x2, x0, 10 # S1y
+ADDI x3, x0, 20 # S2x
+ADDI x4, x0, 20 # S2y
+
+ADDI x5, x0, 32 # Limit
+ADDI x6, x0, 0  # y loops
+LOOP_VY:
+    ADDI x7, x0, 0 # x loops
+    LOOP_VX:
+        # Dist1 = |x-10|^2 + |y-10|^2
+        SUB x8, x7, x1
+        MUL x8, x8, x8
+        SUB x9, x6, x2
+        MUL x9, x9, x9
+        ADD x10, x8, x9 # D1
+        
+        # Dist2 = |x-20|^2 + |y-20|^2
+        SUB x8, x7, x3
+        MUL x8, x8, x8
+        SUB x9, x6, x4
+        MUL x9, x9, x9
+        ADD x11, x8, x9 # D2
+        
+        # Compare D1 < D2
+        BLT x10, x11, SET_RED
+        # Else Blue
+        SETCLR 0x0000FF
+        BEQ x0, x0, DRAW_V
+        
+        SET_RED:
+        SETCLR 0xFF0000
+        
+        DRAW_V:
+        DRAWPIX x7, x6
+        
+        ADDI x7, x7, 1
+        BLT  x7, x5, LOOP_VX
+        
+    ADDI x6, x6, 1
+    BLT  x6, x5, LOOP_VY
+
+HALT:
+    BEQ x0, x0, HALT

@@ -10,6 +10,7 @@ typedef enum {
   OP_SUB,
   OP_SUBI,
   OP_MUL,
+  OP_DIV,
   OP_DRAWPIX,
   OP_DRAWSTEP,
   OP_SETCLR,
@@ -17,6 +18,11 @@ typedef enum {
   OP_LW,
   OP_SW,
   OP_BEQ,
+  OP_BLT,
+  OP_SIN,
+  OP_COS,
+  OP_MOVETO,
+  OP_LINETO,
   OP_NOP,
   OP_INVALID
 } Opcode;
@@ -107,6 +113,8 @@ typedef struct {
   Opcode op;
   int32_t rs1_val;
   int32_t rs2_val;
+  int rs1_idx;
+  int rs2_idx;
   int rd;      // destination register number
   int32_t imm; // immediate value
   uint32_t pc; // original PC (for branches)
@@ -123,6 +131,10 @@ typedef struct {
 
   uint32_t pc; // PC for branch prediction/debugging
   int valid;   // 1 = valid, 0 = bubble
+
+  // Branch support
+  int branch_taken;
+  uint32_t target_pc;
 } EXIOreg;
 
 typedef struct {
@@ -158,7 +170,8 @@ int build_imem(const char *filename, InstMem *im, LabelEntry labels[],
 // Pipeline stages
 void if_stage(ProgramCounter *pc, InstMem *im, IFIDreg *ifid);
 void id_stage(DecodedInst *dec, IDEXreg *idex);
-void ex_stage(IDEXreg *idex, EXIOreg *exio);
+void ex_stage(IDEXreg *idex, EXIOreg *exio, IOMEMreg *iomem_fwd,
+              MEMWBreg *memwb_fwd);
 void io_stage(EXIOreg *exio, IOMEMreg *iomem);
 void mem_stage(IOMEMreg *iomem, MEMWBreg *memwb);
 void wb_stage(MEMWBreg *memwb);

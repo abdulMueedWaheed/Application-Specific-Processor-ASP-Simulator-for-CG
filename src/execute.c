@@ -12,7 +12,8 @@ Framebuffer *global_fb = NULL;
 static int32_t data_memory[DATA_MEM_SIZE];
 
 // ========== EXECUTE STAGE ==========
-void ex_stage(IDEXreg *idex, EXIOreg *exio) {
+void ex_stage(IDEXreg *idex, EXIOreg *exio, IOMEMreg *iomem_fwd,
+              MEMWBreg *memwb_fwd) {
   // Initialize output as bubble
   exio->valid = 0;
 
@@ -24,20 +25,52 @@ void ex_stage(IDEXreg *idex, EXIOreg *exio) {
   exio->op = idex->op;
   exio->rd = idex->rd;
   exio->pc = idex->pc;
-  exio->rs1_val = idex->rs1_val;
-  exio->rs2_val = idex->rs2_val;
+
+  // Initial values from ID (RegFile read)
+  int32_t current_rs1_val = idex->rs1_val;
+  int32_t current_rs2_val = idex->rs2_val;
+
+  // --- FORWARDING LOGIC ---
+  // Priority: IOMEM (youngest/most recent) > MEMWB (older)
+
+  // Forwarding for RS1
+  if (idex->rs1_idx != 0) { // Don't forward r0
+    if (iomem_fwd->valid && iomem_fwd->rd != 0 &&
+        iomem_fwd->rd == idex->rs1_idx) {
+      current_rs1_val = iomem_fwd->alu_result;
+    } else if (memwb_fwd->valid && memwb_fwd->rd != 0 &&
+               memwb_fwd->rd == idex->rs1_idx) {
+      current_rs1_val = memwb_fwd->write_data;
+    }
+  }
+
+  // Forwarding for RS2
+  if (idex->rs2_idx != 0) {
+    if (iomem_fwd->valid && iomem_fwd->rd != 0 &&
+        iomem_fwd->rd == idex->rs2_idx) {
+      current_rs2_val = iomem_fwd->alu_result;
+    } else if (memwb_fwd->valid && memwb_fwd->rd != 0 &&
+               memwb_fwd->rd == idex->rs2_idx) {
+      current_rs2_val = memwb_fwd->write_data;
+    }
+  }
+
+  exio->rs1_val = current_rs1_val;
+  exio->rs2_val = current_rs2_val;
   exio->imm = idex->imm;
 
   // Use unified executor with NULL framebuffer
   // Graphics ops will be effectively NOPs here but valid ops
   ExecResult exec_result = execute_inst(
       idex->op, idex->rd, -1, -1, // Registers already read in ID stage
-      idex->imm, idex->pc, idex->rs1_val, idex->rs2_val,
+      idex->imm, idex->pc, current_rs1_val, current_rs2_val,
       regs, // Global register file
       NULL, // NO FRAMEBUFFER IN EX STAGE
       data_memory, DATA_MEM_SIZE);
 
   exio->alu_result = exec_result.alu_result;
+  exio->branch_taken = (exec_result.is_branch && exec_result.branch_taken);
+  exio->target_pc = exec_result.next_pc;
 }
 
 // ========== I/O STAGE ==========
@@ -58,7 +91,8 @@ void io_stage(EXIOreg *exio, IOMEMreg *iomem) {
 
   // Execute only graphics instructions
   if (exio->op == OP_DRAWPIX || exio->op == OP_DRAWSTEP ||
-      exio->op == OP_SETCLR || exio->op == OP_CLEARFB) {
+      exio->op == OP_SETCLR || exio->op == OP_CLEARFB ||
+      exio->op == OP_MOVETO || exio->op == OP_LINETO) {
 
     execute_inst(exio->op, exio->rd, -1, -1, exio->imm, exio->pc, exio->rs1_val,
                  exio->rs2_val, regs,
@@ -114,6 +148,8 @@ void mem_stage(IOMEMreg *iomem, MEMWBreg *memwb) {
   case OP_DRAWSTEP:
   case OP_SETCLR:
   case OP_CLEARFB:
+  case OP_MOVETO:
+  case OP_LINETO:
     memwb->rd = -1; // No register writeback
     break;
 

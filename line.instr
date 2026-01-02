@@ -1,0 +1,15 @@
+# Line Drawing Demo
+CLEARFB
+SETCLR 0xFFFFFF  # White
+
+# Draw diagonal line from (0,0) to (100,100)
+ADDI x1, x0, 0   # x = 0
+ADDI x2, x0, 200 # limit
+
+LOOP:
+    DRAWPIX x1, x1
+    ADDI x1, x1, 1
+    BLT  x1, x2, LOOP
+
+# End of program
+
